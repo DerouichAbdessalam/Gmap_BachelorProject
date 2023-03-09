@@ -14,4 +14,6 @@ case class CMap[A, B](f: A => B) {
   def getOrElse(k: A, v: B): B = f(k)
 
   def contains(k: A): Boolean = true
+
+
 }
