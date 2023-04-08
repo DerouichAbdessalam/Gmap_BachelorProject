@@ -2,6 +2,13 @@ import sbt.ScriptedPlugin
 
 enablePlugins(GitVersioning)
 enablePlugins(GitBranchPrompt)
+//-------------------------------------using metals----------------------------------------
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
+addSbtPlugin("org.scalameta" % "sbt-scalafix" % "0.9.32")
+addSbtPlugin("org.scalameta" % "sbt-metals" % "0.10.6")
+//-----------------------------------------------------------------------------------------
+
+
 
 git.useGitDescribe := true
 
@@ -88,16 +95,6 @@ lazy val commonSettings: Seq[Setting[_]] = artifactSettings ++ Seq(
 
   resolvers ++= Resolver.sonatypeOssRepos("releases"),
   resolvers += ("uuverifiers" at "http://logicrunch.research.it.uu.se/maven").withAllowInsecureProtocol(true),
-
-//-------------------------------------using metals----------------------------------------
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
-addSbtPlugin("org.scalameta" % "sbt-scalafix" % "0.9.32")
-addSbtPlugin("org.scalameta" % "sbt-metals" % "0.10.6")
-//-----------------------------------------------------------------------------------------
-
-
-
-
 
   libraryDependencies ++= Seq(
     // "ch.epfl.lara"    %% "inox"          % inoxVersion,
