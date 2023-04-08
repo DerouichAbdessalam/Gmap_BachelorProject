@@ -98,7 +98,7 @@ class GMap[A, B](uknownItem : (Key, MapValue[B]), unknownItemInvariant : (Key, M
     
   }ensuring{newMap => 
 
-    //ensure the semantical link between the elements of the [pre-set map]<->[post-set map]     
+    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]     
     forall((keyPrime: Key) => (key != keyPrime) ==> (get(map, keyPrime) == get(newMap, keyPrime)))
   }
 
@@ -125,14 +125,11 @@ class GMap[A, B](uknownItem : (Key, MapValue[B]), unknownItemInvariant : (Key, M
       case x => x
     } +(k -> MapValue(choose[Value], false)) 
 
-    GMap[A, B](MapValue[B](value, false), mapState.unknownItemInvariant) ensuring { gmap =>
-      gmap.mapState.length == newLength &&
-      gmap.mapState.knownItems.keySet == newKnownItems.keySet &&
-      gmap.mapState.knownItems.forall{ case (k, MapValue(v, p)) =>
-        newKnownItems.get(k).contains(MapValue(v, p))
-      } &&
-      getItemInvariants(gmap.mapState.unknownItemInvariant)
-    }
+    val newMap = GMap(uknownItem, unknownItemInvariant)
+    newMap.mapState = MapState(newKnownItems, unknownItemInvariant, newLength)
+  }.ensuring{newMap => 
+    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]     
+    forall((keyPrime: Key) => (key != keyPrime) ==> (get(map, keyPrime) == get(newMap, keyPrime)))
   }
 
 /**
