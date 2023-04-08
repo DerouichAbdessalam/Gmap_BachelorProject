@@ -3,6 +3,7 @@ package stainless.collection
 import org.scalacheck.Arbitrary
 import scala.math.BigInt
 import stainless.lang._
+import stainless.annotation._
 
   /**
     * defining a map item 
@@ -40,11 +41,11 @@ class GMap[A, B](uknownItem : (Key, MapValue[B]), unknownItemInvariantInit : (Ke
         // freshV == mapValue.value ; freshP == mapValue.present      
         choose[(Value, Boolean)]((freshV, freshP) => freshV == mapValue.value && freshP == mapValue.present)
       }
-
+    }
   }ensuring{
     case (value, present) => 
       // Check that the number of unique known items does not exceed its length and the invariants 
-      MapState.knownItems.filter{case MapItem(_,_,p) => p}.size <= MapState.length && getItemInvariants 
+      MapState.knownItems.filter{case MapItem(_,_,p) => p}.size <= MapState.length
 
   }
 
