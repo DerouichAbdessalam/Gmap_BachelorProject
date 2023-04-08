@@ -15,5 +15,4 @@ case class CMap[A, B](f: A => B) {
 
   def contains(k: A): Boolean = true
 
-
 }

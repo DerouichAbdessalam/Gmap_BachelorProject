@@ -1,107 +1,149 @@
 
 package stainless.collection
+import org.scalacheck.Arbitrary
+import scala.math.BigInt
+import stainless.lang._
 
-import stainless.annotation._
+  /**
+    * defining a map item 
+    *
+    * @param value
+    * @param present
+    */
+  case class MapValue[B](value : B ,present : Boolean)
+
+
+  case class MapState[A, B](knownItems: Map[A,MapValue[B]], unknownItemInvariant : MapValue[B] => Boolean, length : BigInt)
+
+
+
+class GMap[A, B](uknownItem : (Key, MapValue[B]), unknownItemInvariantInit : (Key, MapValue[B]) => Boolean ){
+  
+  type Key = A
+  type Value = B
+  
+  //the map state 
+  var MapState = MapState[B](Map.Empty[Key, MapValue[B]], unknownItemInvariantInit, 0)
+  
+
+  def get(key: Key): (Value, Boolean) = {
+    MapState.knownItems().get(key) match {
+      case None => {
+        // we generate the two fresh values 
+        // such that the unkown item invariant applies on the 2 values 
+        // MapState.unknownItemInvariant(key, freshV, freshP)
+        choose[(Value, Boolean)](t => MapState.unknownItemInvariant(key, MapValue(t._1, t._2)))
+      }
+      case Some(mapValue) => {
+        // we generate the two fresh values 
+        // such that they match the values we found 
+        // freshV == mapValue.value ; freshP == mapValue.present      
+        choose[(Value, Boolean)]((freshV, freshP) => freshV == mapValue.value && freshP == mapValue.present)
+      }
+
+  }ensuring{
+    case (value, present) => 
+      // Check that the number of unique known items does not exceed its length and the invariants 
+      MapState.knownItems.filter{case MapItem(_,_,p) => p}.size <= MapState.length && getItemInvariants 
+
+  }
+
+  /**
+    * set method for GMAP class 
+    */
+  def set(key: Key, value: Value): GMap[A, B] = {
+    val (oldValue, present) = get(key)
+    val newLength = if (present) MapState.length else MapState.length + 1
+    
+    //no need to create a new state : 
+    val newKnownItems = MapState.knownItems.map {
+      //case the value was already in the map
+      case (k, MapValue(v, p)) if k == key =>
+        k -> MapValue(value, true)
+      case (k, MapValue(v, p)) =>
+        k -> MapValue(v, p)
+    } + (key -> MapValue(value, true))
+    // this last addition is made to add the eleent to the list of known elems if 
+    //it wasn't previously there    
+
+    GMap(uknownItem, unknownItemInvariantInit).ensuring { map =>
+      map.MapState.knownItems.keySet == newKnownItems.keySet &&
+      newKnownItems.forall {
+        case (k, v) => 
+          MapState.knownItems.get(k) match {
+            case Some(MapValue(value, present)) =>
+              (value == v.value && present == v.present) || k == key
+            case None =>
+              MapState.unknownItemInvariant(v)
+          }
+      } &&
+      map.MapState.length == newLength &&
+      map.getItemInvariants == MapState.unknownItemInvariant
+    }
+  }
+
+  /**
+    * remove method implementation 
+    */
+  def remove(key: Key): GMap[A, B] = {
+    val (value, present) = get(key)
+    val newLength = MapState.length + (if (present) -1 else 0)
+    val newKnownItems = MapState.knownItems.map{ case (k, MapValue(v, p)) =>
+      if (k == key) (k, MapValue(value, false))
+      else (k, MapValue(v, p && k != key))
+    } + (key -> MapValue(value, false))
+    GMap[A, B](MapValue[B](value, false), MapState.unknownItemInvariant) ensuring { gmap =>
+      gmap.MapState.length == newLength &&
+      gmap.MapState.knownItems.keySet == newKnownItems.keySet &&
+      gmap.MapState.knownItems.forall{ case (k, MapValue(v, p)) =>
+        newKnownItems.get(k).contains(MapValue(v, p))
+      } &&
+      getItemInvariants(gmap.MapState.unknownItemInvariant)
+    }
+  }
+
 /**
-  * representation of a ghost map
-  * WEEK 1 : get the invariants right
-  * meeting : get hints about the invariants  
-  * WEEK 2 : implement the methods 
-  * in the following we will work as if f has an attribute space 
-  * 
-  * 
-  * the function f will keep track of the known items 
-  * examples of implementations of f will be given in examples 
-  * f = realm of known 
+  * should the layers be explicitely handeled and managed like in this example ? 
   */
-final case class GMap[A, B](length : Int , f: A => (B, Boolean), uknownInvariant : (A,B) => Boolean){
+  def forAll[K, V](m: Map[K, V], f: ((K, V)) => Boolean): Boolean = {
+  // Check if  predicate for known items
+  val knownPredicateHolds =  m.filter((a, MapValue(value, present)) => present).forall((k, MapValue(value, present)) => f(k,v))
 
+  // Check if the predicate holds for the unknown item
+  val (unknownkey , MapValue(unknownValue, unknownPresence)) = unknownItem
+  val unknownPredicateHolds = if unknownPresence then f((unknownKey, unknownValue)) else true 
 
+  // Update the map's invariant
+  val newInvariant: ((K, V, Boolean)) => Boolean = (item: (K, MapVAlue(V, Boolean))) => f(item) && unknownPredicateHolds
 
-    val uknownItem = f.uknownItem
-    /**
-      * get implem 
-      *
-      * @param k : key value
-      */
-    def get(k: A): Option[(B, Boolean)] = {
-        ???
-    }ensuring{ res =>
-        f.space.size <= length && {
-            res match   
-                case Option((a,b)) => (a,b) == f(k)
-                case None => 
-                    uknownInvariant(f.uknown)
-        }
-
+  //defining layers 
+  // should the sudocode look something like this ?
+  // we keep in memory all the previous layers
+  def checkLayers(layers: List[Map[K, (V, Boolean)]], prevInvariant: ((K, V, Boolean)) => Boolean): Boolean = {
+    layers match {
+      case Nil => true
+      case layer :: rest => {
+        val layerItems = layer.map { case (k, (v, p)) => (k, v, p) }
+        val layerPredicateHolds = layerItems.forall(prevInvariant)
+        layerPredicateHolds && checkLayers(rest, newInvariant)
+      }
     }
+  }
 
-    /**
-      * set implem 
-      *
-      * @param k : key 
-      * @param v : value associated
-      */
-    def set(k : A, v : B): GMap[A, B] = {
-        val getRes = get(k)
-        val incr = ite(getRes == None || !getRes.get()._2 , 1, 0)
-        GMap(length + incr, f.orElse( k => (v, true)),uknownInvariant)
-    }ensuring{
-        res =>
-            val getRes = get(k)
-            val incr = ite(getRes == None || !getRes.get()._2, 1, 0)
-            ite(incr, res.length == length + 1, res.length == length) && {
-                val knownSpaceDiff =  res.f.space.diff(f.space)
-                val oldSpaceInclusion =res.f.space.contains(f.space) 
+  // Check the invariant for all layers efterwards then adding the new map as a layer
 
-                //check equivalence with the condition in paper
-                //we suppose here that space is a list 
-                oldSpaceInclusion && (knownSpaceDiff == Nil || knownSpaceDiff == List(k))
-            }
-
-    }
-    
-
-        
-    def remove(k : A): GMap[A, B] =  {
-        val getRes = get(k)
-        val decr = ite(getRes != None && getRes.get()._2 , -1, 0)
-        //change arbitrary v from null to something safer maybe f.uknown.
-        GMap(length + decr, f.orElse(k => (null, false)), uknownInvariant)
-    }ensuring{
-        res =>
-            val getRes = get(k)
-            val incr = ite(getRes != None || getRes.get()._2, -1, 0)
-            ite(incr, res.length == length + 1, res.length == length) && {
-                val knownSpaceDiff =  f.space.diff(res.f.space)
-                val newSpaceInclusion = f.space.contains(res.f.space) 
-
-                //TODO : check equivalence with the condition on paper
-                newSpaceInclusion && (knownSpaceDiff == Nil || knownSpaceDiff == List(k))
-            }
-
-    }
-    
+}
+  
 
 
-    def forAll(p : (A, B) => Boolean ): Boolean = 
-        val knownCheck = k => {
-            val getRes = f.get(k)
-            val v = getRes.get()._1
-            p(k, v)
 
-        }
-        f.space.foreach(knownCheck) && p(uknownItem._1, uknownItem._2)
-    //should i add an ensuring here ??
+
 
 }
 
 
-/**
-  * if then else abreviation
-  *
-  * @param c condition
-  * @param t case true 
-  * @param f case false 
-  */
-def ite[A](c : Boolean , t : A, f: A) = if c then t else a
+
+}
+
+    
+
