@@ -29,14 +29,12 @@ case class MapState[K, V](knownItems: scala.collection.Map[K,MapValue[V]], unkno
   * @param unknownItemInvariantInit the  unknown item invariant represents the condition that all items not yet known should 
   *     satisfy if they're present in our map  
   */
-class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit : (A, MapValue[B]) => Boolean){
-  
+class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean, var mapState: MapState[A,B]){
+
+
   type Key = A
   type Value = B
-  
-  //the map state 
-  var mapState = MapState[Key, Value](scala.collection.Map.empty[Key, MapValue[B]], unknownItemInvariantInit, 0)
-  
+
   /**
     * tries to find the value associated with the key given as argument, 
     * if the key corresponds to a known item the value, presence pair 
@@ -93,7 +91,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit : (A, 
     //this last addition is done in case the key wasn't present in the map 
     
      
-    val newMap = new GMap(unknownItem, mapState.unknownItemInvariant)
+    val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
     newMap
   }ensuring{newMap => 
@@ -101,8 +99,6 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit : (A, 
     //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]     
     forall((keyPrime: Key) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
   }
-
-
 
   /**
     * creates a new map where the key->value mapping is removed if it was previously present
@@ -126,7 +122,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit : (A, 
       case x => x
     } ++ scala.collection.Map(key -> MapValue(choose[Value]( x => true), false)) 
 
-    val newMap = new GMap(unknownItem, mapState.unknownItemInvariant)
+    val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
     newMap
   }.ensuring{newMap => 
@@ -162,6 +158,16 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit : (A, 
 }
   
 
+
+
+object GMap {
+  def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
+    //the initial map state
+    val mapState = MapState[A,B](scala.collection.Map.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
+
+    new GMap(unknownItem, unknownItemInvariantInit, mapState)
+  }
+}
 
 
 
