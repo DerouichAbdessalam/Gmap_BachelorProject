@@ -1,6 +1,5 @@
 
 package stainless.collection
-import scala.math.BigInt
 import stainless.lang._
 import stainless.annotation._
 
@@ -19,7 +18,7 @@ case class MapValue[B](value : B ,present : Boolean)
   * @param unknownItemInvariant invariant that should hold on the unknown item if present 
   * @param length number of known present elements in the map
 */
-case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
+case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : Int)
 
 
 /**
@@ -156,9 +155,6 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
   }
 }
   
-
-
-
 object GMap {
   def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
     //the initial map state
