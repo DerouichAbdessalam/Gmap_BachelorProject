@@ -79,6 +79,16 @@ object Map {
     def toScala: ScalaMap[A, B] = {
       map.theMap
     }
+    
+    @extern @pure
+    def filter(predicate: ((A, B)) => Boolean): Map[A, B] = {
+      Map.fromScala(map.theMap.filter(predicate))
+    }
+    @extern @pure
+    def forAll(predicate: ((A, B)) => Boolean): Boolean = {
+      map.theMap.forall(predicate)
+    }
+  
   }
 }
 
