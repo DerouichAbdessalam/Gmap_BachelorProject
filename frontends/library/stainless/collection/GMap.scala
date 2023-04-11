@@ -19,7 +19,7 @@ case class MapValue[B](value : B ,present : Boolean)
   * @param unknownItemInvariant invariant that should hold on the unknown item if present 
   * @param length number of known present elements in the map
 */
-case class MapState[K, V](knownItems: scala.collection.Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
+case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
 
 
 /**
@@ -46,14 +46,14 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     */
   def get(key: Key): (Value, Boolean) = {
     mapState.knownItems.get(key) match {
-      case scala.Some(mapValue) => {
+      case Some(mapValue) => {
         // we generate the two fresh values 
         // such that they match the values we found 
         // freshV == mapValue.value ; freshP == mapValue.present      
         choose[(Value, Boolean)]{case (freshV, freshP) => freshV == mapValue.value && freshP == mapValue.present}
       }
 
-      case scala.None => {
+      case None() => {
         // we generate the two fresh values 
         // such that the unkown item invariant applies on the 2 values 
         // mapState.unknownItemInvariant(key, freshV, freshP)
@@ -64,7 +64,6 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     case (value, present) => 
       // Check that the number of unique known items does not exceed its length and the invariants 
       mapState.knownItems.filter{case (k, MapValue(_,p)) => p}.size <= mapState.length
-
   }
 
   /**
@@ -81,13 +80,13 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     val newLength = if (present) mapState.length else mapState.length + 1
 
     //no need to create a new state, we just map the old one : 
-    val newKnownItems = mapState.knownItems.map {
+    val newKnownItems = mapState.knownItems.map{
       //case we find the key in the map
       case (k, MapValue(v, p)) if k == key =>
         k -> MapValue(value, true)
       //case the key is different from the key to set  
       case x => x
-    } ++ scala.collection.Map(key -> MapValue(value, true))
+    } ++ Map(key -> MapValue(value, true))
     //this last addition is done in case the key wasn't present in the map 
     
      
@@ -120,7 +119,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
         k -> MapValue(choose[Value](x => true), false) 
       //otherwise keep the element intact 
       case x => x
-    } ++ scala.collection.Map(key -> MapValue(choose[Value]( x => true), false)) 
+    } ++ Map(key -> MapValue(choose[Value]( x => true), false)) 
 
     val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
@@ -163,7 +162,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
 object GMap {
   def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
     //the initial map state
-    val mapState = MapState[A,B](scala.collection.Map.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
+    val mapState = MapState[A,B](Map.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
 
     new GMap(unknownItem, unknownItemInvariantInit, mapState)
   }
@@ -174,9 +173,4 @@ object GMap {
 
 
 
-
-
-
-
-    
 

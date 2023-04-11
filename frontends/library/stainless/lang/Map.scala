@@ -85,12 +85,17 @@ object Map {
       Map.fromScala(map.theMap.filter(predicate))
     }
     @extern @pure
-    def forAll(predicate: ((A, B)) => Boolean): Boolean = {
+    def forall(predicate: ((A, B)) => Boolean): Boolean = {
       map.theMap.forall(predicate)
     }
     @extern @pure
     def size: Int = {
       map.theMap.size
+    }
+    
+    @extern @pure
+    def map[K,V](f : ((A,B)) => (K,V) ): Map[K, V] = {
+      Map.fromScala(map.theMap.map(f))
     }
   }
 }
