@@ -88,7 +88,10 @@ object Map {
     def forAll(predicate: ((A, B)) => Boolean): Boolean = {
       map.theMap.forall(predicate)
     }
-  
+    @extern @pure
+    def size: Int = {
+      map.theMap.size
+    }
   }
 }
 
