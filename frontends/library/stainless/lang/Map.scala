@@ -83,14 +83,16 @@ object Map {
     @extern @pure
     def filter(predicate: ((A, B)) => Boolean): Map[A, B] = {
       Map.fromScala(map.theMap.filter(predicate))
-    }
+    } ensuring (res => (res.size <= size) )
+
+
     @extern @pure
     def forall(predicate: ((A, B)) => Boolean): Boolean = {
       map.theMap.forall(predicate)
     }
     @extern @pure
-    def size: Int = {
-      map.theMap.size
+    def size: BigInt = {
+      BigInt(map.theMap.size)
     }
     
     @extern @pure

@@ -59,10 +59,23 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
         freshSuchThat[(Value, Boolean)]{case (freshV, freshP) => mapState.unknownItemInvariant(key, MapValue(freshV, freshP))}
       }
     }
-  }ensuring{
-    case (value, present) => 
-      // Check that the number of unique known items does not exceed its length and the invariants 
-      mapState.knownItems.filter{case (k, MapValue(_,p)) => p}.size <= mapState.length
+  }
+
+  /**
+    * lemma used by user when he wants to use the get method property 
+    *
+    * @param key the key to get from the map
+    */
+  @extern
+  def getPost(key: A): Unit = {
+  ()
+  }.ensuring {
+
+    val (value, present) = get(key)
+
+    // Check that the number of unique known items does not exceed its length and the invariants
+
+    mapState.knownItems.filter{case (k, MapValue(_,p)) => p}.size <= mapState.length
   }
 
   /**
@@ -92,10 +105,21 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
     newMap
-  }ensuring{newMap => 
+  }
 
-    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]     
-    forall((keyPrime: Key) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
+
+  /**
+    * lemma used by user when he wants to use the set method property 
+    *
+    * @param key the key to get from the map
+    */
+  @extern
+  def setPost(key: A, value: B): Unit = {
+    ()
+  }.ensuring {
+    val newMap = set(key, value)
+    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]
+    forall((keyPrime: A) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
   }
 
   /**
@@ -123,11 +147,23 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
     newMap
-  }.ensuring{newMap => 
-
-    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]     
-    forall((keyPrime: Key) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
   }
+
+  /**
+    * lemma used by user when he wants to use the remove method property 
+    *
+    * @param key the key to get from the map
+    */
+
+  @extern
+  def removePost(key: A): Unit = {
+    ()
+  }.ensuring {
+    val newMap = remove(key)
+    //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]
+    forall((keyPrime: A) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
+  }
+
 
   /**
     * checks if property is verified by all present elements in the map 
