@@ -48,15 +48,15 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
       case Some(mapValue) => {
         // we generate the two fresh values 
         // such that they match the values we found 
-        // freshV == mapValue.value ; freshP == mapValue.present      
-        choose[(Value, Boolean)]{case (freshV, freshP) => freshV == mapValue.value && freshP == mapValue.present}
+        // freshV == mapValue.value ; freshP == mapValue.present
+        freshSuchThat[(Value, Boolean)]{case (freshV, freshP) => freshV == mapValue.value && freshP == mapValue.present}
       }
 
       case None() => {
         // we generate the two fresh values 
         // such that the unkown item invariant applies on the 2 values 
         // mapState.unknownItemInvariant(key, freshV, freshP)
-        choose[(Value, Boolean)]{case (freshV, freshP) => mapState.unknownItemInvariant(key, MapValue(freshV, freshP))}
+        freshSuchThat[(Value, Boolean)]{case (freshV, freshP) => mapState.unknownItemInvariant(key, MapValue(freshV, freshP))}
       }
     }
   }ensuring{
@@ -114,11 +114,11 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     val newKnownItems = mapState.knownItems.map{ 
       //case we encounter the key : associate the key with a fresh value and false presence
       case (k, MapValue(v, p)) if (k == key)  =>
-        //the choose creates a fresh value 
-        k -> MapValue(choose[Value](x => true), false) 
+        //the freshSuchThat creates a fresh value 
+        k -> MapValue(freshSuchThat[Value](x => true), false) 
       //otherwise keep the element intact 
       case x => x
-    } ++ Map(key -> MapValue(choose[Value]( x => true), false)) 
+    } ++ Map(key -> MapValue(freshSuchThat[Value]( x => true), false)) 
 
     val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
@@ -152,6 +152,18 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     //the result of the forAll operation
     knownPredicateHolds && unknownPredicateHolds
   }
+
+
+    
+  @extern
+  def freshSuchThat[T](pred:
+  T => Boolean): T = {
+
+  ??? : T
+
+  }.ensuring(pred)
+
+
 }
   
 object GMap {
@@ -162,6 +174,8 @@ object GMap {
     new GMap(unknownItem, unknownItemInvariantInit, mapState)
   }
 }
+
+
 
 
 
