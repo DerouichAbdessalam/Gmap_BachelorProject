@@ -146,9 +146,8 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, M
     val unknownPredicateHolds = if (unknownPresence) predicate(unknownkey, unknownItem._2) else true 
 
     // update the map's invariant
-    val newInvariant = (unknownKey : Key , unknownValue : MapValue[Value]) => mapState.unknownItemInvariant(unknownKey, unknownValue) && unknownPredicateHolds
-    
-    mapState =  MapState(mapState.knownItems, newInvariant, mapState.length)
+    val inv = mapState.unknownItemInvariant
+    mapState =  MapState(mapState.knownItems, (unknownKey, unknownValue) => inv(unknownKey, unknownValue) && unknownPredicateHolds, mapState.length)
 
     //the result of the forAll operation
     knownPredicateHolds && unknownPredicateHolds
