@@ -38,6 +38,10 @@ def freshSuchThat[T](pred: T => Boolean): T = {
 @library
 class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
 
+  /**
+    * the length of the map  
+    */
+  def length  = mapState.length
 
   // type A = A
   // type B = B

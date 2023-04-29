@@ -1,10 +1,9 @@
 import stainless.collection._
 import stainless.lang._
 import stainless.annotation._
-import MapValue
 
 //we define an array only containing positive elements only 
-class ArrayAsMap {
+object ArrayAsMap {
 
     def arrayInvariant(key : Int, mapValue: MapValue[Int]): Boolean = value match 
         case MapValue(value, presence) =>  value >= 0 
@@ -15,7 +14,8 @@ class ArrayAsMap {
     var arrayMap : Gmap(Int, Int) = Gmap(unknownItem, arrayInvariant) 
     
     def mapSetOp() : Unit = 
-        arrayMap.set(0, 1)
+        arrayMap = arrayMap.set(0, 1)
+        setPost()
         
 
 }
