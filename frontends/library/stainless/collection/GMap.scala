@@ -9,7 +9,7 @@ import stainless.annotation._
   * @param value value of the map item
   * @param present indicates presence of the item in the map
   */
-   @library
+@library
 case class MapValue[B](value : B ,present : Boolean)
 
 /**
@@ -51,7 +51,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param key
     * @returnthe value, presence bollean pair
     */
-   @library
+   
   def get(key: A): (B, Boolean) = {
     mapState.knownItems.get(key) match {
       case Some(mapValue) => {
@@ -71,7 +71,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     }
   }
 
-  @extern  @library
+  @extern  
   def getPost(key: A): Unit = {
     ()
   }.ensuring {
@@ -87,7 +87,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param value
     * @return the map with the added mapping
     */
-  @library
+  
   def set(key: A, value: B): GMap[A, B] = {
 
     //checking if the element was already present in the map
@@ -110,7 +110,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     newMap
   }
 
-  @extern  @library
+  @extern  
   def setPost(key: A, value: B): Unit = {
     ()
   }.ensuring {
@@ -126,7 +126,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param value
     * @return the map with the removed mapping
     */
-   @library
+   
   def remove(key: A): GMap[A, B] = {
 
     //checking if the element was already present in the map
@@ -147,7 +147,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     newMap
   }
 
-  @extern  @library
+  @extern  
   def removePost(key: A): Unit = {
     ()
   }.ensuring {
@@ -162,7 +162,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param predicate the property to check
     * @return whether the predicate holds for all present elements or not
     */
-   @library
+   
   def forAll(predicate: (A, MapValue[B]) => Boolean): Boolean = {
     // check predicate for present known items
     val knownPredicateHolds =  mapState.knownItems.filter{
@@ -181,7 +181,8 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     knownPredicateHolds && unknownPredicateHolds
   }
 }
- @library
+
+@library
 object GMap {
   def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
     //the initial map state
