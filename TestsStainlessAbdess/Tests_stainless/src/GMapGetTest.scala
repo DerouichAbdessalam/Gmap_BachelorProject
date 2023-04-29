@@ -9,7 +9,7 @@ object GMapSpec {
     
     def testGetEmptyMap(): Unit = {
         val map = GMap[Int,String]( defaultUnknownItem(0, "hey"), dummyInv)
-        assert(map.size == 0)
+        assert(map.length == 0)
     }
     
 }
