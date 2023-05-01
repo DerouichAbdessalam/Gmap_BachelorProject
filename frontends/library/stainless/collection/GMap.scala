@@ -22,7 +22,7 @@ case class MapValue[B](value : B ,present : Boolean)
 @library
 case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
 
-@extern
+@extern @library
 def freshSuchThat[T](pred: T => Boolean): T = {
   ??? : T
 }.ensuring(pred)
