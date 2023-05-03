@@ -30,7 +30,7 @@ object ArrayAsMap {
         nA.removePost(0)
 
     
-
+     
     def positiveMapForAllOp() : Boolean = {
         val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant) 
         val nA = arrayMap.set(0, 1)

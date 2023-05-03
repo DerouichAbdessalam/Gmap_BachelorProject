@@ -9,7 +9,6 @@ import stainless.annotation._
   * @param value value of the map item
   * @param present indicates presence of the item in the map
   */
-@library
 case class MapValue[B](value : B ,present : Boolean)
 
 /**
@@ -19,14 +18,25 @@ case class MapValue[B](value : B ,present : Boolean)
   * @param unknownItemInvariant invariant that should hold on the unknown item if present
   * @param length number of known present elements in the map
 */
-@library
 case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
 
-@extern @library
+@extern
+@pure
 def freshSuchThat[T](pred: T => Boolean): T = {
   ??? : T
 }.ensuring(pred)
 
+@extern
+@pure
+def forall[T](pred: T => Boolean): Boolean = {
+  ??? : Boolean
+}
+
+@extern
+@pure
+def forallPost[T](pred: T => Boolean, t: T): Unit = {
+  require(forall(pred))
+}.ensuring(_ => pred(t))
 
 /**
   * Ghost map class implementation
@@ -35,13 +45,8 @@ def freshSuchThat[T](pred: T => Boolean): T = {
   * @param unknownItemInvariantInit the  unknown item invariant represents the condition that all items not yet known should
   *     satisfy if they're present in our map
   */
-@library
-class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
+class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (A, MapValue[B]) => Boolean, var mapState: MapState[A,B]){
 
-  /**
-    * the length of the map  
-    */
-  def length  = mapState.length
 
   // type A = A
   // type B = B
@@ -53,9 +58,8 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * verifying together with the key the unknown item invariant
     *
     * @param key
-    * @returnthe value, presence bollean pair
+    * @return the value, presence boolean pair
     */
-   
   def get(key: A): (B, Boolean) = {
     mapState.knownItems.get(key) match {
       case Some(mapValue) => {
@@ -75,7 +79,8 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     }
   }
 
-  @extern  
+  @extern
+  @pure
   def getPost(key: A): Unit = {
     ()
   }.ensuring {
@@ -91,7 +96,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param value
     * @return the map with the added mapping
     */
-  
+  @pure
   def set(key: A, value: B): GMap[A, B] = {
 
     //checking if the element was already present in the map
@@ -114,13 +119,15 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     newMap
   }
 
-  @extern  
+  @extern
+  @pure
   def setPost(key: A, value: B): Unit = {
     ()
   }.ensuring {
     val newMap = set(key, value)
     //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]
-    forall((keyPrime: A) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
+    def pred(keyPrime: A): Boolean = (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime))
+    forall(pred) && newMap.get(key) == (value, true)
   }
 
   /**
@@ -130,7 +137,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param value
     * @return the map with the removed mapping
     */
-   
+  @pure
   def remove(key: A): GMap[A, B] = {
 
     //checking if the element was already present in the map
@@ -151,13 +158,15 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     newMap
   }
 
-  @extern  
+  @extern
+  @pure
   def removePost(key: A): Unit = {
     ()
   }.ensuring {
     val newMap = remove(key)
     //ensure the semantical link between the common elements of the [pre-set map]<->[post-set map]
-    forall((keyPrime: A) => (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime)))
+    def pred(keyPrime: A): Boolean = (key != keyPrime) ==> (get(keyPrime) == newMap.get(keyPrime))
+    forall(pred)
   }
 
   /**
@@ -166,7 +175,6 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     * @param predicate the property to check
     * @return whether the predicate holds for all present elements or not
     */
-   
   def forAll(predicate: (A, MapValue[B]) => Boolean): Boolean = {
     // check predicate for present known items
     val knownPredicateHolds =  mapState.knownItems.filter{
@@ -184,21 +192,47 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
     //the result of the forAll operation
     knownPredicateHolds && unknownPredicateHolds
   }
+
+  def forAllPost(predicate: (A, MapValue[B]) => Boolean): Unit = {
+    ()
+  }.ensuring {
+    val thisNew = freshCopy(this)
+    val res = thisNew.forAll(predicate)
+    this.mapState.knownItems == thisNew.mapState.knownItems
+  }
 }
 
-@library
 object GMap {
   def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
     //the initial map state
     val mapState = MapState[A,B](Map.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
 
-    new GMap(unknownItem, mapState)
+    new GMap(unknownItem, unknownItemInvariantInit, mapState)
+  }
+  def test(unknownItem : (Int, MapValue[Int]), arrayInvariant: (Int, MapValue[Int]) => Boolean): Unit = {
+    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    val nA = arrayMap.set(0, 1)
+    arrayMap.setPost(0,1)
+  }
+
+  def test2(x: BigInt): Unit = {
+    val unknownItem = (42, MapValue(42, false))
+    val arrayInvariant = (k: Int, mv: MapValue[Int]) => k == mv.value
+    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    val arrayMap2 = arrayMap.set(42, 42)
+    arrayMap.setPost(42, 42) // setPost sur l'ancien
+    val (got, present) = arrayMap2.get(42)
+    arrayMap2.getPost(42)
+    assert(got == 42) // OK
+    // Sur l'ancienne map
+    val (got2, present2) = arrayMap.get(50)
+    assert(arrayInvariant(50, MapValue(got2, present2))) // Ok, grâce à l'invariant
+    assert(got2 == 50)
+    // Sur la nouvelle
+    // Ne passe pas, parce que newKnownItems dans set utilise map et ++
+    // qui sont non contraint (c-a-d Stainless peut lui donner des valeurs arbitraires)
+    val (got3, present3) = arrayMap2.get(50)
+    assert(arrayInvariant(50, MapValue(got3, present3)))
+    assert(got3 == 50)
   }
 }
-
-
-
-
-
-
-
