@@ -189,7 +189,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
     val inv = mapState.unknownItemInvariant
     mapState =  MapState(mapState.knownItems, (unknownKey, unknownValue) => inv(unknownKey, unknownValue) && unknownPredicateHolds, mapState.length)
 
-    //the result of the forAll operation
+    // the result of the forAll operation
     knownPredicateHolds && unknownPredicateHolds
   }
 
@@ -219,20 +219,28 @@ object GMap {
     val unknownItem = (42, MapValue(42, false))
     val arrayInvariant = (k: Int, mv: MapValue[Int]) => k == mv.value
     val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    //setting the 42->42 mapping + verifying propreties
     val arrayMap2 = arrayMap.set(42, 42)
-    arrayMap.setPost(42, 42) // setPost sur l'ancien
+    arrayMap.setPost(42, 42)
+    
+
     val (got, present) = arrayMap2.get(42)
     arrayMap2.getPost(42)
     assert(got == 42) // OK
-    // Sur l'ancienne map
+    
+    // get on absent value returns a value verifying the unknown invariant 
     val (got2, present2) = arrayMap.get(50)
-    assert(arrayInvariant(50, MapValue(got2, present2))) // Ok, grâce à l'invariant
+    assert(arrayInvariant(50, MapValue(got2, present2))) 
     assert(got2 == 50)
+
+  //------------------------------------------------------------------------------------
     // Sur la nouvelle
     // Ne passe pas, parce que newKnownItems dans set utilise map et ++
     // qui sont non contraint (c-a-d Stainless peut lui donner des valeurs arbitraires)
     val (got3, present3) = arrayMap2.get(50)
     assert(arrayInvariant(50, MapValue(got3, present3)))
     assert(got3 == 50)
+  //------------------------------------------------------------------------------------
+
   }
 }

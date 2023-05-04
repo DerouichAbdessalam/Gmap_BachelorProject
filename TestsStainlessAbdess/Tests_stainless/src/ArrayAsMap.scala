@@ -12,10 +12,19 @@ object ArrayAsMap {
     def unknownItem : (Int, MapValue[Int]) = (-1 , MapValue(1, false))
     
 
-    def mapGetOp() : Unit = 
+    def mapGetOpPresentElem() : Unit = 
         val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant) 
         val nA = arrayMap.set(0, 1)
-        nA.get(0)
+        //a get on a present key item should return the associated value 
+        assert(nA.get(0)._1 == 1)
+        nA.getPost(0)   
+
+    def mapGetOpAbsentElem() : Unit = 
+        val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant) 
+        val nA = arrayMap.set(0, 1)
+        //a get on an absent key should return a value that verifies the unknown item invariant
+        val (res, pres) = nA.get(2)
+        assert(arrayInvariant(2, MapValue(res, pres)))
         nA.getPost(0)   
 
     def mapSetOp() : Unit = 
@@ -31,18 +40,20 @@ object ArrayAsMap {
 
     
      
-    def positiveMapForAllOp() : Boolean = {
+    def positiveMapForAllOp() : Unit = {
         val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant) 
         val nA = arrayMap.set(0, 1)
-        nA.forAll((x: Int, mapV : MapValue[Int]) => mapV.value >= 0)
-    }ensuring(res => !res)
+        val res = nA.forAll((x: Int, mapV : MapValue[Int]) => mapV.value >= 0)
+        assert(res)
+    }
 
 
-    def negativeMapForAllOp() : Boolean = {
+    def negativeMapForAllOp() : Unit = {
         val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant) 
         val nA = arrayMap.set(0, -1)
-        nA.forAll((x: Int, mapV : MapValue[Int]) => mapV.value >= 0)
-    }ensuring(res => !res)
+        val res = nA.forAll((x: Int, mapV : MapValue[Int]) => mapV.value >= 0)
+        assert(!res)
+    }
 }
 
 
