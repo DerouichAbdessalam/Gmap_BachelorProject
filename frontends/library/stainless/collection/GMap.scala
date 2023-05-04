@@ -18,7 +18,7 @@ case class MapValue[B](value : B ,present : Boolean)
   * @param unknownItemInvariant invariant that should hold on the unknown item if present
   * @param length number of known present elements in the map
 */
-case class MapState[K, V](knownItems: Map[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
+case class MapState[K, V](knownItems: ListMap[K,MapValue[V]], unknownItemInvariant : (K, MapValue[V]) => Boolean, length : BigInt)
 
 @extern
 @pure
@@ -58,7 +58,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
     * verifying together with the key the unknown item invariant
     *
     * @param key
-    * @return the value, presence boolean pair
+    * @returnthe value, presence bollean pair
     */
   def get(key: A): (B, Boolean) = {
     mapState.knownItems.get(key) match {
@@ -110,7 +110,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
         k -> MapValue(value, true)
       //case the key is different from the key to set
       case x => x
-    } ++ Map(key -> MapValue(value, true))
+    } + (key -> MapValue(value, true))
     //this last addition is done in case the key wasn't present in the map
 
 
@@ -151,7 +151,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
         k -> MapValue(freshSuchThat[B](x => true), false)
       //otherwise keep the element intact
       case x => x
-    } ++ Map(key -> MapValue(freshSuchThat[B]( x => true), false))
+    } + (key -> MapValue(freshSuchThat[B]( x => true), false))
 
     val newMap = GMap(unknownItem, mapState.unknownItemInvariant)
     newMap.mapState = MapState(newKnownItems, mapState.unknownItemInvariant, newLength)
@@ -189,7 +189,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
     val inv = mapState.unknownItemInvariant
     mapState =  MapState(mapState.knownItems, (unknownKey, unknownValue) => inv(unknownKey, unknownValue) && unknownPredicateHolds, mapState.length)
 
-    // the result of the forAll operation
+    //the result of the forAll operation
     knownPredicateHolds && unknownPredicateHolds
   }
 
