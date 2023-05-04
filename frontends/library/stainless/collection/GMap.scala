@@ -205,7 +205,7 @@ class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (
 object GMap {
   def apply[A, B](unknownItem : (A, MapValue[B]), unknownItemInvariantInit: (A, MapValue[B]) => Boolean): GMap[A, B] = {
     //the initial map state
-    val mapState = MapState[A,B](Map.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
+    val mapState = MapState[A,B](ListMap.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
 
     new GMap(unknownItem, unknownItemInvariantInit, mapState)
   }
