@@ -41,6 +41,21 @@ case class ListMap[A, B](toList: List[(A, B)]) {
     get(key).get
   }
 
+
+  def map[A2,B2](f: ((A, B)) => (A2, B2)): ListMap[A2,B2] = {
+
+      def rec(curr: List[(A, B)], acc: ListMap[A2,B2]): ListMap[A2, B2] = curr match {
+        case Nil() => acc
+        case Cons(h, tl) => rec(tl, acc + f(h))
+      }
+      
+      rec(toList, ListMap.empty)
+  }
+
+  def filter(p: ((A, B)) => Boolean): ListMap[A,B] = ListMap(toList.filter(p))
+  
+  def size: BigInt = toList.size
+
   def +(keyValue: (A, B)): ListMap[A, B] = {
     ListSpecs.filterMapNotIn(toList, keyValue._1) // gives us:
     assert(!toList.filter(_._1 != keyValue._1).map(_._1).contains(keyValue._1))
