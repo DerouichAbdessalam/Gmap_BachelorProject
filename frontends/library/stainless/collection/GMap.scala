@@ -233,14 +233,20 @@ object GMap {
     assert(arrayInvariant(50, MapValue(got2, present2))) 
     assert(got2 == 50)
 
-  //------------------------------------------------------------------------------------
-    // Sur la nouvelle
-    // Ne passe pas, parce que newKnownItems dans set utilise map et ++
-    // qui sont non contraint (c-a-d Stainless peut lui donner des valeurs arbitraires)
+    // get on absent value returns a value verifying the unknown invariant 
+    //(tested on a map modified with a set ) 
     val (got3, present3) = arrayMap2.get(50)
     assert(arrayInvariant(50, MapValue(got3, present3)))
     assert(got3 == 50)
-  //------------------------------------------------------------------------------------
 
+  } 
+    //This is a negative test, it has to not pass !
+    def test3: Unit = {
+    val unknownItem = (42, MapValue(42, false))
+    val arrayInvariant = (k: Int, mv: MapValue[Int]) => k == mv.value
+    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    val (got, present) = arrayMap.get(42)
+    arrayMap.getPost(42)
+    assert(got == 50) //
   }
 }
