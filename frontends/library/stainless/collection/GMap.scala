@@ -1,7 +1,7 @@
-
 package stainless.collection
 import stainless.lang._
 import stainless.annotation._
+
 
   /**
   * defining a map item
@@ -26,6 +26,12 @@ def freshSuchThat[T](pred: T => Boolean): T = {
   ??? : T
 }.ensuring(pred)
 
+
+@extern
+def assume(pred: Boolean): Unit = {
+  ??? : Unit
+}.ensuring(_ => pred)
+
 @extern
 @pure
 def forall[T](pred: T => Boolean): Boolean = {
@@ -45,7 +51,7 @@ def forallPost[T](pred: T => Boolean, t: T): Unit = {
   * @param unknownItemInvariantInit the  unknown item invariant represents the condition that all items not yet known should
   *     satisfy if they're present in our map
   */
-class GMap[A, B](unknownItem : (A, MapValue[B]), val unknownItemInvariantInit: (A, MapValue[B]) => Boolean, var mapState: MapState[A,B]){
+class GMap[A, B](unknownItem : (A, MapValue[B]), var mapState: MapState[A,B]){
 
 
   // type A = A
@@ -207,7 +213,7 @@ object GMap {
     //the initial map state
     val mapState = MapState[A,B](ListMap.empty[A, MapValue[B]], unknownItemInvariantInit, 0)
 
-    new GMap(unknownItem, unknownItemInvariantInit, mapState)
+    new GMap(unknownItem, mapState)
   }
   def test(unknownItem : (Int, MapValue[Int]), arrayInvariant: (Int, MapValue[Int]) => Boolean): Unit = {
     val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
@@ -247,6 +253,30 @@ object GMap {
     val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
     val (got, present) = arrayMap.get(42)
     arrayMap.getPost(42)
-    assert(got == 50) //
+    assume(got == 50)
+    assert(false)
   }
+
+  /**
+    * positive forAll test
+    */
+  def test4 : Unit{
+    val unknownItem = (42, MapValue(42, false))
+    //relaxed initial invariant 
+    val arrayInvariant1 = (k: Int, mv: MapValue[Int]) => k >= mv.value
+    //more strict property 
+    val property = (k: Int, mv: MapValue[Int]) => k == mv.value
+    //array creation + elements insertion
+    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    val nA = arrayMap.set(1, 1)
+    arrayMap.setPost(1,1)
+    //forAll application 
+    nA.forAll(property)
+    //accumulated Inv
+    newInv = nA.mapState.map.unknownItemInvariant
+    assert(newInv((2, MapValue(2, true))))
+    assert(!newInv((2, MapValue(3, true))))
+  }
+
+
 }
