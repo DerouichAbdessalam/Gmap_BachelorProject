@@ -260,23 +260,22 @@ object GMap {
   /**
     * positive forAll test
     */
-  def test4 : Unit{
+  def test4 : Unit = 
     val unknownItem = (42, MapValue(42, false))
     //relaxed initial invariant 
     val arrayInvariant1 = (k: Int, mv: MapValue[Int]) => k >= mv.value
     //more strict property 
     val property = (k: Int, mv: MapValue[Int]) => k == mv.value
     //array creation + elements insertion
-    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant)
+    val arrayMap : GMap[Int, Int] = GMap(unknownItem, arrayInvariant1)
     val nA = arrayMap.set(1, 1)
     arrayMap.setPost(1,1)
     //forAll application 
     nA.forAll(property)
     //accumulated Inv
-    newInv = nA.mapState.map.unknownItemInvariant
-    assert(newInv((2, MapValue(2, true))))
-    assert(!newInv((2, MapValue(3, true))))
-  }
+    val newInv = nA.mapState.unknownItemInvariant
+    assert(newInv(2, MapValue(2, true)))
+    assert(!newInv(2, MapValue(3, true)))
 
 
 }
